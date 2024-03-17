@@ -1,14 +1,9 @@
-__version__ = "1.0.1"
+__version__ = "1.1.0"
 
 
 import threading
 class Runner(threading.Thread):
-    from subprocess import Popen as __Popen
-    from time import sleep as __sleep
-    from sys import executable as __executable
-    from os import stat as __stat
-    from threading import Thread as __Thread
-    import customisedLogs as __customisedLogs
+
     def __init__(self, toRun:dict[str, list[str]], toCheck:list[str], reCheckInterval:int=1):
         """
         Initialise the Runner with appropriate parameters and use the start() method to start the process
@@ -16,11 +11,21 @@ class Runner(threading.Thread):
         :param toCheck: list of all the filenames to check for updates
         :param reCheckInterval: count in seconds to wait for update check
         """
-        self.__Thread.__init__(self)
+        from subprocess import Popen as __Popen
+        from time import sleep as __sleep
+        from sys import executable as __executable
+        from os import stat as __stat
+        import customisedLogs as __customisedLogs
+        self.__Popen = __Popen
+        self.__sleep = __sleep
+        self.__executable = __executable
+        self.__stat = __stat
+        self.__customisedLogs = __customisedLogs
+        threading.Thread.__init__(self)
         self.logger = self.__customisedLogs.Manager()
         self.programsToRun = toRun
         self.programsToCheck = toCheck
-        self.currentProcesses:list[Runner.__Popen] = []
+        self.currentProcesses:list[__Popen] = []
         self.reCheckInterval:float = reCheckInterval
         self.lastFileStat = self.fetchFileStats()
         self.startPrograms()
