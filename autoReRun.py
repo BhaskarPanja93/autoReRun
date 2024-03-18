@@ -1,4 +1,4 @@
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 
 import threading
@@ -94,4 +94,4 @@ class Runner(threading.Thread):
                 self.currentProcesses.remove(_process)
         for program in self.programsToRun:
             self.currentProcesses.append(self.__Popen([self.__executable, program]+self.programsToRun[program]))
-            self.logger.success("PROCESS" "Started new process")
+            self.logger.success("PROCESS", "Started new process")
