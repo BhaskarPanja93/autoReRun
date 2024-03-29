@@ -1,4 +1,4 @@
-# customisedLogs v1.1.1
+# autoReRun v1.2.0
 
 ```pip install autoReRun --upgrade```
 

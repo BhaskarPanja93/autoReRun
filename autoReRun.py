@@ -1,4 +1,31 @@
-__version__ = "1.1.1"
+__version__ = "1.2.0"
+__packagename__ = "autorerun"
+
+
+def updatePackage():
+    from time import sleep
+    from json import loads
+    import http.client
+    print(f"Checking updates for Package {__packagename__}")
+    try:
+        host = "pypi.org"
+        conn = http.client.HTTPSConnection(host, 443)
+        conn.request("GET", f"/pypi/{__packagename__}/json")
+        data = loads(conn.getresponse().read())
+        latest = data['info']['version']
+        if latest != __version__:
+            try:
+                import pip
+                pip.main(["install", __packagename__, "--upgrade"])
+                print(f"\nUpdated package {__packagename__} v{__version__} to v{latest}\nPlease restart the program for changes to take effect")
+                sleep(3)
+            except:
+                print(f"\nFailed to update package {__packagename__} v{__version__} (Latest: v{latest})\nPlease consider using pip install {__packagename__} --upgrade")
+                sleep(3)
+        else:
+            print(f"Package {__packagename__} already the latest version")
+    except:
+        print(f"Ignoring version check for {__packagename__} (Failed)")
 
 
 import threading
@@ -86,7 +113,7 @@ class Runner(threading.Thread):
         """
         temp = self.currentProcesses.copy()
         if temp:
-            self.logger.success("PROCESS" "Killing previous processes")
+            self.logger.success("PROCESS", "Killing previous processes")
         for _process in temp:
             if _process and not _process.poll():
                 _process.kill()
