@@ -1,0 +1,24 @@
+# pyproject.toml
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autoReRun"
+version = "1.2.1"
+description = "A simple program to automatically kill running process(es) and re-spawn new process(es) for the runnable files everytime some specified file(s) get modified (or deleted or created). For example, Automatically re-starting any server when the server file(s) is modified."
+
+readme = "README.md"
+authors = [{ name = "Bhindi", email = "bhaskarpanja93@gmail.com" }]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords = ["auto rerun", "auto run", "file runner", "update", "updater"]
+requires-python = ">=3.6"
+dependencies = ["customisedLogs"]
+
+[project.urls]
+Homepage = "https://github.com/BhaskarPanja93/autoReRun"

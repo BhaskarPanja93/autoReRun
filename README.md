@@ -1,4 +1,4 @@
-# autoReRun v1.2.0
+# autoReRun v1.2.1
 
 ```pip install autoReRun --upgrade```
 
