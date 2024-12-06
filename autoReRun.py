@@ -1,4 +1,4 @@
-__version__ = "1.2.1"
+__version__ = "1.3.0"
 __packagename__ = "autorerun"
 
 
@@ -15,8 +15,17 @@ def updatePackage():
         latest = data['info']['version']
         if latest != __version__:
             try:
-                import pip
-                pip.main(["install", __packagename__, "--upgrade"])
+                import subprocess
+                from pip._internal.utils.entrypoints import (
+                    get_best_invocation_for_this_pip,
+                    get_best_invocation_for_this_python,
+                )
+                from pip._internal.utils.compat import WINDOWS
+                if WINDOWS:
+                    pip_cmd = f"{get_best_invocation_for_this_python()} -m pip"
+                else:
+                    pip_cmd = get_best_invocation_for_this_pip()
+                subprocess.run(f"{pip_cmd} install {__packagename__} --upgrade")
                 print(f"\nUpdated package {__packagename__} v{__version__} to v{latest}\nPlease restart the program for changes to take effect")
                 sleep(3)
             except:
@@ -28,34 +37,32 @@ def updatePackage():
         print(f"Ignoring version check for {__packagename__} (Failed)")
 
 
-import threading
-class Runner(threading.Thread):
+class Imports:
+    from threading import Thread
+    from subprocess import Popen
+    from time import sleep
+    from sys import executable
+    from os import stat
+    from customisedLogs import CustomisedLogs
 
-    def __init__(self, toRun:dict[str, list[str]], toCheck:list[str], reCheckInterval:int=1):
+
+class AutoReRun(Imports.Thread):
+    def __init__(self, toRun:dict[str, list[str]], toCheck:list[str], reCheckInterval:int=1, logOnTerminal:bool=True):
         """
-        Initialise the Runner with appropriate parameters and use the start() method to start the process
+        Initialise the Runner with appropriate parameters to start the process
         :param toRun: dictionary with filenames to run as the keys and list of all arguments to pass as the value
         :param toCheck: list of all the filenames to check for updates
-        :param reCheckInterval: count in seconds to wait for update check
+        :param reCheckInterval: count in seconds to wait for update checks
         """
-        from subprocess import Popen as __Popen
-        from time import sleep as __sleep
-        from sys import executable as __executable
-        from os import stat as __stat
-        import customisedLogs as __customisedLogs
-        self.__Popen = __Popen
-        self.__sleep = __sleep
-        self.__executable = __executable
-        self.__stat = __stat
-        self.__customisedLogs = __customisedLogs
-        threading.Thread.__init__(self)
-        self.logger = self.__customisedLogs.Manager()
-        self.programsToRun = toRun
-        self.programsToCheck = toCheck
-        self.currentProcesses:list[__Popen] = []
-        self.reCheckInterval:float = reCheckInterval
-        self.lastFileStat = self.fetchFileStats()
-        self.startPrograms()
+        Imports.Thread.__init__(self)
+        self.__logger = Imports.CustomisedLogs() if logOnTerminal else None
+        self.__programsToRun = toRun
+        self.__programsToCheck = toCheck
+        self.__currentProcesses:list[Imports.Popen] = []
+        self.__reCheckInterval:float = reCheckInterval
+        self.__lastFileStat = self.__fetchFileStats()
+        self.__startPrograms()
+        self.start()
 
 
     def run(self):
@@ -65,12 +72,12 @@ class Runner(threading.Thread):
         :return:
         """
         while True:
-            if self.checkForUpdates():
-                self.startPrograms()
-            self.__sleep(self.reCheckInterval)
+            if self.__checkForUpdates():
+                self.__startPrograms()
+            Imports.sleep(self.__reCheckInterval)
 
 
-    def fetchFileStats(self)->dict[str, float]:
+    def __fetchFileStats(self)->dict[str, float]:
         """
         Checks current file state
         Returns a list containing tuples containing each file and its last modified state
@@ -78,47 +85,58 @@ class Runner(threading.Thread):
         :return:
         """
         tempStats:dict[str, float] = {}
-        for filename in self.programsToCheck:
+        for filename in self.__programsToCheck:
             try:
-                tempStats[filename] = self.__stat(filename).st_mtime
+                tempStats[filename] = Imports.stat(filename).st_mtime
             except: ## file is not present
                 tempStats[filename] = 0
         return tempStats
 
 
-    def checkForUpdates(self)->bool:
+    def __checkForUpdates(self)->bool:
         """
-        Checks if current file state matches old known state
         Returns a boolean if current received file state differs from the last known state
         :return:
         """
-        fileStat = self.fetchFileStats()
-        if self.lastFileStat != fileStat:
+        fileStat = self.__fetchFileStats()
+        if self.__lastFileStat != fileStat:
             changes = []
             for file in fileStat:
-                if fileStat[file] != self.lastFileStat[file]:
+                if fileStat[file] != self.__lastFileStat[file]:
                     changes.append(file)
-            self.logger.success("FILE CHANGED", "\n".join(changes))
-            self.lastFileStat = fileStat
+            self.__logger.log(self.__logger.Colors.light_blue_800, "RERUN-FILE-CHANGED", "\n".join(changes))
+            self.__lastFileStat = fileStat
             return True
         else:
             return False
 
 
-    def startPrograms(self):
+    def __checkProgramHealth(self, process:Imports.Popen, program:str):
         """
-        Respawns processes
-        Kills last running processes if any and then respawn newer processes for each file to be run
+        Wait for process end and cleanup
+        :param process: The process to check
+        :param program: program path
         :return:
         """
-        temp = self.currentProcesses.copy()
+        process.wait()
+        self.__logger.log(self.__logger.Colors.grey_800, "RERUN-FINISH", program, "ended execution")
+        if process in self.__currentProcesses: self.__currentProcesses.remove(process)
+
+
+    def __startPrograms(self):
+        """
+        Respawns processes
+        Kills last running processes if any and respawn new processes for each file to be run
+        :return:
+        """
+        temp = self.__currentProcesses.copy()
         if temp:
-            self.logger.success("PROCESS", "Killing previous processes")
+            self.__logger.log(self.__logger.Colors.red_800, "RERUN-OLD", "Killing old processes")
         for _process in temp:
-            if _process and not _process.poll():
+            while _process in self.__currentProcesses or _process.poll() is None:
                 _process.kill()
-                _process.wait()
-                self.currentProcesses.remove(_process)
-        for program in self.programsToRun:
-            self.currentProcesses.append(self.__Popen([self.__executable, program]+self.programsToRun[program]))
-            self.logger.success("PROCESS", "Started new process")
+        for program in self.__programsToRun:
+            _process = Imports.Popen([Imports.executable, program] + self.__programsToRun[program])
+            Imports.Thread(target=self.__checkProgramHealth, args=(_process, program,)).start()
+            self.__currentProcesses.append(_process)
+            self.__logger.log(self.__logger.Colors.green_800, "RERUN-NEW", "Started new process")

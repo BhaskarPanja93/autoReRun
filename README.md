@@ -1,4 +1,4 @@
-# autoReRun v1.2.1
+# autoReRun v1.3.0
 
 ```pip install autoReRun --upgrade```
 
@@ -16,20 +16,16 @@ python3 -m pip install autoReRun --upgrade
 
 #### <br><br>Using this program is as simple as:
 ```
-from autoReRun import Runner as updateRunner
-
+from autoReRun import AutoReRun
 toRun = {
     "server1.py":["-p 5000", "-h 0.0.0.0"], # file A to run
     "server2.py":["-p 6000"], # file B to run
          }
-         
-toCheck = [
-    "server1.toml",  # file X to check for updates
-    "server2.toml" # file Y to check for updates
-           ]
-           
+
+toCheck = ["server1.toml", "server2.toml"] # files to check for updates
+
 # start the process
-updateRunner(toRun=toRun, toCheck=toCheck).start() 
+AutoReRun(toRun=toRun, toCheck=toCheck)
 ```
 
 ### Future implementations:

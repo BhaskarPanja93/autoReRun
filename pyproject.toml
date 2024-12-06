@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "autoReRun"
-version = "1.2.1"
+version = "1.3.0"
 description = "A simple program to automatically kill running process(es) and re-spawn new process(es) for the runnable files everytime some specified file(s) get modified (or deleted or created). For example, Automatically re-starting any server when the server file(s) is modified."
 
 readme = "README.md"
